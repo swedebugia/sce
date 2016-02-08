@@ -1,6 +1,5 @@
 #+SETUPFILE: ~/.emacs.d/SETUPFILE.org
-#+TITLE: Stowers Scientific Computing Environment (SCE) Linux package management with GNU Guix
-#+DATE: <2015-06-08 Mon>
+#+TITLE: Making the case for adopting GNU Guix for Linux package management 
 #+AUTHOR: Malcolm Cook
 #+EMAIL: malcolm.cook@gmail.com
 
