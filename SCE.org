@@ -1,22 +1,250 @@
 #+SETUPFILE: ~/.emacs.d/SETUPFILE.org
-#+TITLE: Stowers Computing Environment (sce) \n Linux package management with guix
+#+TITLE: Stowers Scientific Computing Environment (SCE) Linux package management with GNU Guix
 #+DATE: <2015-06-08 Mon>
 #+AUTHOR: Malcolm Cook
 #+EMAIL: malcolm.cook@gmail.com
 
-* Administering guix
-Installing, Configuring & Deploying guix
+* Why adopt GNU Guix for package managment?
+
+There are many approaches to software package management.  The reasons
+for selecting GNU Guix are outlined in this section.
+
+** GNU Guix - in its own words
+
+The [[http://www.gnu.org/software/guix/manual/guix.html#Introduction][introduction to the GNU Guix documentation]] is jam-packed with
+details that present Guix's advantages.  But, it a bit of a hard read
+to the un-initiated; it is both technical and dense.  If reading past
+its first paragraph proves challenging, skip down to read [[GNU Guix
+advantages broken down]] and then return to this excerpt from the intro:
+
+"GNU Guix is a functional package management tool for the GNU (linux)
+system. Package management consists of all activities that relate to
+building packages from sources, honoring their build-time and run-time
+dependencies, installing packages in user environments, upgrading
+installed packages to new versions or rolling back to a previous set,
+removing unused software packages, etc.
+
+The term functional refers to a specific package management discipline
+pioneered by Nix (see Acknowledgments). In Guix, the package build and
+installation process is seen as a function, in the mathematical
+sense. That function takes inputs, such as build scripts, a compiler,
+and libraries, and returns an installed package. As a pure function,
+its result depends solely on its inputs—for instance, it cannot refer
+to software or scripts that were not explicitly passed as inputs. A
+build function always produces the same result when passed a given set
+of inputs. It cannot alter the system’s environment in any way; for
+instance, it cannot create, modify, or delete files outside of its
+build and installation directories. This is achieved by running build
+processes in isolated environments (or containers), where only their
+explicit inputs are visible.
+
+The result of package build functions is cached in the file system, in
+a special directory called the store. Each package is installed in a
+directory of its own, in the store—by default under /gnu/store. The
+directory name contains a hash of all the inputs used to build that
+package; thus, changing an input yields a different directory name.
+
+This approach is the foundation of Guix’s salient features: support
+for transactional package upgrade and rollback, per-user installation,
+and garbage collection of packages (see Features)."
+
+** GNU Guix advantages broken down
+
+There is much contained in and implied by GNU Guix's introductory
+section, and elsewhere, within its manual.  This section intends to
+clearly list the practical consequences of our adopting Guix.
+
+ + Guix package specifications, being "functional", _cannot_ be
+   incomplete; for instance, it is _impossible_ for a deployed Guix
+   package to inadvertently depend upon an aspect of the environment
+   (such as a shared library) in which it was built and deployed.
+
+ + Guix strictly control the environment in which packages are built:
+   builds always take place in a 'clean' environment using the linux
+   chroot mechanism.  This makes it easy, when re-packaging an
+   application for Guix, to identify and fix incompletely specified
+   packages (i.e. packages having tacit prerequisites).  Doing so as
+   early as possible in a package's adoption will mitigate exposure to
+   downstream errors.  This is of special advantage to novice and/or
+   less-than-expert package developers and deployers.
+
+ + Guix detects and prohibits program name collisions; loading
+   conflicting packages into a users environment is _impossible_; this
+   prevents the ambiguity and associated error that can arise when,
+   for example, two packages define different programs by the same
+   name and both are placed in the user's execution PATH.
+
+ + Guix packages naturally extend to include all package resources,
+   including man pages, libraries, as well as binaries.  This is a
+   result of their using the underlying build engine's (i.e. gnu make)
+   installation targets.
+
+ + Guix packages, being independent of host on which they are built,
+   can be downloaded already built by upstream servers known as
+   [[https://www.gnu.org/software/guix/manual/html_node/Substitutes.html#Substitutes][substitues]], with the assurance of their being bit-level identical
+   to the results of the generally longer process of configuration and
+   compilation on local servers.
+
+ + Guix provides for transactional package upgrades and roll-backs,
+   allowing testing of new package deployments with a guaranteed means
+   of rapid recovery should testing warrant.
+
+ + Guix allows for the creation of multiple environment profiles,
+   which may be per-user (typically), or per-group (i.e. lab), or per
+   project (i.e. directory).  These profiles allow for isolation of
+   the effects of package changes to only those subscribing to the
+   profile.
+
+ + Guix allows for unprivileged package management; users do not need
+   special elevated privileges (root or sudo) to create custom
+   environment prifiles.  Especially noteworthy is that this allows
+   for rationally sharing package management as a distributed
+   responsibility.  This includes installing new site-available
+   applications (for those available in the guix repositories).  Thus,
+   if one user observes that a new release of a site-installed
+   application has become available, that user can safely install the
+   upgrade centrally and immediately start using it, without effecting
+   any other user's environment; without any further coordination,
+   when another user _are_ ready to adopt the upgrade, they will find
+   that installation is unnecessary, as it has already occurred.
+
+ + Guix explicitly represents package dependencies, allowing for a
+   [[https://www.gnu.org/software/guix/manual/html_node/Invoking-guix-gc.html#Invoking-guix-gc][garbage collection]] process to identify and delete packages that are
+   installed but no longer required; this allows for reclaiming
+   storage, and reducing the size of an installed software catalog.
+
+ + Guix provides a set of [[https://www.gnu.org/software/guix/manual/guix.html#Build-Systems][build systems]] providing support for language
+   specific package management systems, including R, perl, python,
+   ruby, haskell, emacs.  This should allow a single approach for
+   managing computing environments for each of these languages/tools,
+   as opposed to needing to master the ideosyncracies of multiple
+   approaches, i.e. perlbrew for perl, pyenv or pythonbrew for python,
+   rbenv for ruby, etc.
+
+ + Guix provides command to [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Commands][display package information]], allowing to
+   automate the production of catalogs of software package.  Such
+   catalogs may then be shared, printed, emailed, or embedded into
+   community-visible web pages as various means of advertising package
+   availability to the research community.
+
+ + Guix package specifications, being written in [[https://www.gnu.org/software/guix/manual/guix.html#Defining-Packages][Guile/scheme]], do no depend
+   upon the users SHELL (i.e. guix works equally well with zsh, bash,
+   tcsh, etc) (TODO: check on this)
+
+ + Guix [[https://www.gnu.org/software/guix/manual/guix.html#Invoking-guix-package][simplifies package installation]]: viz. `guix package -i abyss`
+   serves to download, compile, test, and install the most recent
+   version of abyss known to guix repository.
+
+ + Guix has a future - it is the package manager for the new GNU
+   backed linux distribution, [[https://www.gnu.org/software/guix/][GuixSD]].
+
+ + Guix is [[https://www.gnu.org/software/guix/manual/][well documented]]
+
+ + Guix features are under continued development, including tools for
+
+   + [[https://www.gnu.org/software/guix/manual/guix.html#Invoking-guix-graph][production of graphs]] for visualizing dependencies between packages
+
+   + [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Completions][shell 'completion']] facilities
+
+   + [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Interface][emacs integration]] (optional) as interface for package development
+     and management
+
+ + Guix has [[https://www.gnu.org/software/guix/contribute/][rich community support]] - bugs will be fixed - features will be improved.
+
+ + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][many recipes]] -of which
+   currently [[http://guix.mdc-berlin.de/packages?/?search=bioinfo][54 are bioinformatics]] packages.
+
+ + Guix packaging is relatively easy to learn - it is reasonably
+   documented and there are `lint` style tools making checked recipes
+   for being well-structured; they identify common errors in package
+   specification.
+
+ + Guix development is open source - it is open to input from all
+   community members
+
+ + Guix exposes the actual system calls to the package developer
+
+* GNU Guix advantages as compared to bio.brew
+
+SIMR has gone through a variety of approaches to the package
+management of a wide scientific applications over the years.
+Currently, we are using [[https://github.com/metalhelix/bio.brew][bio.brew]] which was developed in-house by
+former SIMR member Jim Vallandingham.
+
+Many issues have been identified while working with bio.brew.  Those
+marked with "!!!" might be considered egregious.  ALL should be
+addressed in our move to Guix.  
+
+Bio.brew is missing many features present in other package managers,
+in that it does not:
+
+   + provide any assurance that an application packaged with bio.brew
+     is complete.  A negative consequence of this is that there are
+     bio.brew managed applications which run on some hosts but not
+     others (based on the availability of an installed library).
+   + provide a means of representing dependencies between packages,
+     thus none of the downstream advantages (garbage collection and
+     visual graphing of dependencies) are possible.
+   + !!! detect collisions (due to either multiple versions of a
+     package, or multiple packages with identically named files)
+   + !!! extend naturally to install manpages, libraries, (anything
+     other than binaries) without special code.  !!!
+   + !!! allow swapping between alternate builds (i.e. for starters
+     `bb deactivate <pkg>` was never fully/correctly implemented)
+   + !!! allow for version specific man pages or environment variables;
+     so, it is not possible to have different environments for each
+     versioned install of an app.
+   + run package tests and protect against installing failing packages
+   + provide for environment configuration with shells other than bash
+     (i.e. csh is bash only (i.e. for_env assumes bash
+   + allow end-user control of apps in end-user environment - it is an
+     all or none affair.
+   + implement package "deactivation" - packages can be completely
+     deleted only (remove).
+   + provide for more than one environment - neither users, groups of
+     users, applications can be provided custom environments.  It is
+     an all-or-nothing proposition.
+   + provide roll-back capabilities - returning to a prior version of
+     a package requires deleting the current version and re-installing
+     the old version (assuming the old version is still to be found)
+ + bio.brew is obscure/opaque:
+   + it wraps/hides the actual shell commands that are used to
+     configure/make/test/install.  It does this in an attempts to be a
+     useful abstraction, but in fact it is not.  The recipes should
+     either be in SHELL such as bash, or well documented interface to
+     unix system.
+   + it is selective in which build parameters are exposed (i.e. can
+     not cause make to run verbosely without changing the wrappers)
+   + it adds one more layer between source code and install with
+     intervening !!!
+   + !!! it is poorly documented
+   + !!! it uses undocumneted variables for communicating state
+     between recipes and the engine.
+ + redundant
+   + !!! recipes must explicitly re-list the files to be installed which
+     this is already typically done with the packages build script.
+     /n/local/bin/bio.brew/recipes/blast+ which requires recipes to be
+     re-written when upstream application changes to change binaries.
+     Most install mantras have their own list.  It should be
+     sufficient to simply provide a PREFIX.
+ + ISSUES:
+   + the 'logs' directory contains non-logs
+   + logs are not version specific - installing/building a new version
+     overwrites the log of any previous install
+   + uses wierd terminology - 'install' does not install typically it
+     only builds.
+   + installs things using symlinks which is unexpected by some apps,
+     esp naively coded ones, such as university coded ones like rsem,
+     and leads to long testing/debugging session.
+   + bio.brew has no community
+   + bio.brew is end of life
+
+* Administering Guix
+Installing, Configuring & Deploying Guix
 ** Deploying Base Machine (Mango/Catalpa)
 
  + Building on minimally configued CentOS7 (TBW: jenny? define
    minimal - ie.. missing help2man inter alia)
-
-** packages installed by Jenny/Dustin on mango at my request
-these packages are on top of the original base install image
-#+BEGIN_SRC sh
-sudo yum install libtk (needed by R library MASS and expected to be found on local host).
-#+END_SRC
-
 
 ** Install build preconditions on GUIX_SRVR 
 
@@ -43,7 +271,7 @@ sudo yum -y install gnupg
 sudo yum -y install gnutls
 sudo yum -y install graphviz
 sudo yum -y install guile
-sudo yum -y install guile-devel ## includes guile.m4, a dependency of guix ./bootstrap
+sudo yum -y install guile-devel ## includes guile.m4, a dependency of Guix ./bootstrap
 sudo yum -y install help2man
 sudo yum -y install libgcrypt-devel
 sudo yum -y install make
@@ -95,7 +323,6 @@ sudo make install
 #+END_SRC
 
 
-
 ** Configure NFS share
 
 #+CAPTION: create NSF exported ${GNU}   - TODO TBW by jenny?
@@ -105,18 +332,18 @@ sudo make install
 #+END_SRC
 
 
-#+CAPTION: configure SHELL environment for guix 
+#+CAPTION: configure SHELL environment for Guix 
 
 #+BEGIN_SRC sh
-cat <<'EOF' > guix.init.sh
+cat <<'EOF' > Guix.init.sh
 GUIX_SRVR=catalpa.sgc.loc
 GNU=/gnu
 export PATH=${GNU}/bin:"${PATH}"
 export MANPATH=${GNU}/bin:"${PATH}"
-GUIX_PROFILE="$HOME/.guix-profile" \
-source "$HOME/.guix-profile/etc/profile"
-#export PATH="${HOME}/.guix-profile/bin:${PATH}"
-#export MANPATH="${HOME}/.guix-profile/man"
+GUIX_PROFILE="$HOME/.Guix-profile" \
+source "$HOME/.Guix-profile/etc/profile"
+#export PATH="${HOME}/.Guix-profile/bin:${PATH}"
+#export MANPATH="${HOME}/.Guix-profile/man"
 EOF
 #+END_SRC
 
@@ -131,7 +358,7 @@ NOTEs:
  - deploy to /gnu mounted as network share
  - appropriate configure and/or make options
 
-#+CAPTION: install guix, following http://www.gnu.org/software/guix/download/
+#+CAPTION: install Guix, following http://www.gnu.org/software/Guix/download/
 #+BEGIN_SRC sh
 
 #ssh mango
@@ -141,48 +368,48 @@ mkdir -p ${bld}
 cd ${bld}
 
 ################################################################################
-# binary (re)installation - following http://www.gnu.org/software/guix/manual/html_node/Binary-Installation.html with changes for shared /gnu
-systemctl stop guix-daemon.service # allows to close any files which might be open in the store so they can be deleted
+# binary (re)installation - following http://www.gnu.org/software/Guix/manual/html_node/Binary-Installation.html with changes for shared /gnu
+systemctl stop Guix-daemon.service # allows to close any files which might be open in the store so they can be deleted
 VAR=/var
-NIX_STATE_DIR=${VAR}/guix
+NIX_STATE_DIR=${VAR}/Guix
 cd /tmp
 rm -rf ./var ./gnu
-wget ftp://alpha.gnu.org/gnu/guix/guix-binary-0.8.3.x86_64-linux.tar.xz
-tar xf guix-binary-0.8.3.x86_64-linux.tar.xz --warning=no-timestamp
-rm -rf /var/guix /gnu/var/guix 
+wget ftp://alpha.gnu.org/gnu/Guix/Guix-binary-0.8.3.x86_64-linux.tar.xz
+tar xf Guix-binary-0.8.3.x86_64-linux.tar.xz --warning=no-timestamp
+rm -rf /var/Guix /gnu/var/Guix 
 rm -rf /gnu/* 
 mv gnu/* /gnu # which currently moves only /gnu/store
-mv var/guix ${VAR} # instead of localhost
+mv var/Guix ${VAR} # instead of localhost
 ##adjust symlinks
-ln -sf -T ${VAR}/guix/profiles/per-user/root/guix-profile-1-link ${VAR}/guix/profiles/per-user/root/guix-profile 
-ln -sf -T ${VAR}/guix/profiles ${VAR}/guix/gcroots/profiles
-ln -sf ${VAR}/guix/profiles/per-user/root/guix-profile ~root/.guix-profile
+ln -sf -T ${VAR}/Guix/profiles/per-user/root/Guix-profile-1-link ${VAR}/Guix/profiles/per-user/root/Guix-profile 
+ln -sf -T ${VAR}/Guix/profiles ${VAR}/Guix/gcroots/profiles
+ln -sf ${VAR}/Guix/profiles/per-user/root/Guix-profile ~root/.Guix-profile
 # change the name of the group
-perl -pi -e 's/guixbuild/guix-builder/g'  ~root/.guix-profile/lib/systemd/system/guix-daemon.service 
+perl -pi -e 's/Guixbuild/Guix-builder/g'  ~root/.Guix-profile/lib/systemd/system/Guix-daemon.service 
 # install it as a service
-/bin/cp -f ~root/.guix-profile/lib/systemd/system/guix-daemon.service /etc/systemd/system
+/bin/cp -f ~root/.Guix-profile/lib/systemd/system/Guix-daemon.service /etc/systemd/system
 # start the daemon as a service
-systemctl start guix-daemon.service
+systemctl start Guix-daemon.service
 # alternatively, run the daemon from the command line
-#~root/.guix-profile/bin/guix-daemon --build-users-group=guix-builder
+#~root/.Guix-profile/bin/Guix-daemon --build-users-group=Guix-builder
 # make command available to all users:
 mkdir /gnu/bin
 export PATH=/gnu/bin:"${PATH}"
-ln -s -f -t /gnu/bin  ${VAR}/guix/profiles/per-user/root/guix-profile/bin/guix
-guix archive --authorize < ~root/.guix-profile/share/guix/hydra.gnu.org.pub
+ln -s -f -t /gnu/bin  ${VAR}/Guix/profiles/per-user/root/Guix-profile/bin/Guix
+Guix archive --authorize < ~root/.Guix-profile/share/Guix/hydra.gnu.org.pub
 ################################################################################
 ## first packages
-guix package -i glibc-utf8-locales ## glibc-locales
-export LOCPATH=$HOME/.guix-profile/lib/locale
-guix package -i fontconfig
-guix package -i gs-fonts
-guix package -i font-dejavu
-guix package -i font-gnu-freefont
-guix package -i emacs
-guix package -i gdk-pixbuf # needed by emacs 
-export PATH="/root/.guix-profile/bin:/root/.guix-profile/sbin:${PATH}"
+Guix package -i glibc-utf8-locales ## glibc-locales
+export LOCPATH=$HOME/.Guix-profile/lib/locale
+Guix package -i fontconfig
+Guix package -i gs-fonts
+Guix package -i font-dejavu
+Guix package -i font-gnu-freefont
+Guix package -i emacs
+Guix package -i gdk-pixbuf # needed by emacs 
+export PATH="/root/.Guix-profile/bin:/root/.Guix-profile/sbin:${PATH}"
 gdk-pixbuf-query-loaders  --update-cache
-guix package -i libcanberra # needed by emacs - along with:
+Guix package -i libcanberra # needed by emacs - along with:
 export GTK_PATH=/gnu/store/*-libcanberra-0.30/lib/gtk-3.0/modules
 
 if [ -z "$GTK_MODULES" ] ; then     
@@ -191,19 +418,19 @@ else
         GTK_MODULES="$GTK_MODULES:libcanberra-gtk-module"
 fi
 
-guix package -i gnome-icon-theme
+Guix package -i gnome-icon-theme
 
 ################################################################################
-guix build samtools
+Guix build samtools
 
 ################################################################################
 
-wget ftp://alpha.gnu.org/gnu/guix/guix-0.8.3.tar.gz.sig
-tar xf guix-0.8.3.tar.gz
-cd guix-0.8.3
+wget ftp://alpha.gnu.org/gnu/Guix/Guix-0.8.3.tar.gz.sig
+tar xf Guix-0.8.3.tar.gz
+cd Guix-0.8.3
 ################################################################################
-# first time git clone git://git.savannah.gnu.org/guix.git 
-cd guix
+# first time git clone git://git.savannah.gnu.org/Guix.git 
+cd Guix
 git pull
 
 ################################################################################
@@ -214,76 +441,76 @@ make clean
 ./configure --prefix=/gnu   ## --localstatedir=/gnu/var --exec-prefix=/gnu  
 j=40
 make -j $J
-#make doc/guix.info # allowing: info -f doc/guix.info
-make doc/guix.pdf # requires texi2dvi
-make doc/guix.html
+#make doc/Guix.info # allowing: info -f doc/Guix.info
+make doc/Guix.pdf # requires texi2dvi
+make doc/Guix.html
 make -j $j check    
 
-# mv guix-0.8.3 ~/project/sce/ # from tmp into project
-# rm -rf  guix-0.8.3* & # clean up tmp
-# chmod -R u=rwx  guix-0.8.3 # some didn't want to delete
-# rm -rf  guix-0.8.3* & # clean up tmp
+# mv Guix-0.8.3 ~/project/sce/ # from tmp into project
+# rm -rf  Guix-0.8.3* & # clean up tmp
+# chmod -R u=rwx  Guix-0.8.3 # some didn't want to delete
+# rm -rf  Guix-0.8.3* & # clean up tmp
 
 ## some temp dirs 
-##su - guix # become user guix
-##cd ~mec/project/sce/guix-0.8.3
+##su - Guix # become user Guix
+##cd ~mec/project/sce/Guix-0.8.3
 
 ssh catalpa
 sudo su 
 bld=/tmp/mec/sce
 mkdir -p ${bld}
 cd ${bld}
-rm -rf guix
-scp -q -r mec@mango:/tmp/mec/sce/guix .
-cd guix
+rm -rf Guix
+scp -q -r mec@mango:/tmp/mec/sce/Guix .
+cd Guix
 make install  # any value to separately install-data install-exec 
 
 export PATH=/gnu/bin:"${PATH}"
 
-guix archive --authorize < ~root/.guix-profile/share/guix/hydra.gnu.org.pub
+Guix archive --authorize < ~root/.Guix-profile/share/Guix/hydra.gnu.org.pub
 
-systemctl start guix-daemon.service
+systemctl start Guix-daemon.service
 
 
 # start the daemon
 
-#killall guix-daemon # in case already running (i.e. we're developing this install/configure recipe)
-#nohup /gnu/bin/guix-daemon --build-users-group=guix-builder &
+#killall Guix-daemon # in case already running (i.e. we're developing this install/configure recipe)
+#nohup /gnu/bin/Guix-daemon --build-users-group=Guix-builder &
 tail -f /root/nohup.out &
-##&2> /var/log/guix-daen.log & ## TODO: get into system.d - have it log - with rotation
-systemctl restart guix-daemon.service
-systemctl status guix-daemon.service
+##&2> /var/log/Guix-daen.log & ## TODO: get into system.d - have it log - with rotation
+systemctl restart Guix-daemon.service
+systemctl status Guix-daemon.service
 
-#rm -rf /gnu/var/guix/profiles/per-user ## the doc says this should happen by the daemon but not!  FIXME! BUG?
-mkdir /gnu/var/guix/profiles/per-user ## the doc says this should happen by the daemon but not!  FIXME! BUG?
-chmod a+w /gnu/var/guix/profiles/per-user
+#rm -rf /gnu/var/Guix/profiles/per-user ## the doc says this should happen by the daemon but not!  FIXME! BUG?
+mkdir /gnu/var/Guix/profiles/per-user ## the doc says this should happen by the daemon but not!  FIXME! BUG?
+chmod a+w /gnu/var/Guix/profiles/per-user
 
 exit # return to be mec on catalpa
 export PATH=/gnu/bin:"${PATH}"
-guix build hello
-guix package -i hello
+Guix build hello
+Guix package -i hello
 # 
 
-guix package -i socat
+Guix package -i socat
 
 sudo su
-guix package -i socat
+Guix package -i socat
 
 ## on GUIX_SRVR
 
 
-/root/.guix-profile/bin/socat TCP4-LISTEN:9999  UNIX:/var/guix/daemon-socket/socket
+/root/.Guix-profile/bin/socat TCP4-LISTEN:9999  UNIX:/var/Guix/daemon-socket/socket
 
 ## On a client node where /gnu is mounted read-write I ran this:
 
-export GUIX_DAEMON_SOCKET=/gnu/var/guix/daemon-socket/`hostname`-socat  & socat UNIX-LISTEN:${GUIX_DAEMON_SOCKET}  TCP4:guix-builder:9999
+export GUIX_DAEMON_SOCKET=/gnu/var/Guix/daemon-socket/`hostname`-socat  & socat UNIX-LISTEN:${GUIX_DAEMON_SOCKET}  TCP4:Guix-builder:9999
 
-##socat UNIX-LISTEN:/home/rwurmus/foo TCP4:guix-builder:9999 &    export GUIX_DAEMON_SOCKET=$HOME/foo
+##socat UNIX-LISTEN:/home/rwurmus/foo TCP4:Guix-builder:9999 &    export GUIX_DAEMON_SOCKET=$HOME/foo
 
 At this point I could use
 
-    guix build hello
-    guix environment hello
+    Guix build hello
+    Guix environment hello
 
 
 #+END_SRC
@@ -295,7 +522,7 @@ Considerations:
  - localstatedir " is the value passed to configure as
    --localstatedir" per convention defined in [[https://www.gnu.org/prep/standards/html_node/Directory-Variables.html][GNU Coding Standards:
    Directory Variables]]
- -  [[https://gnunet.org/bot/log/guix/2015-02-10][discussion archive]] - 
+ -  [[https://gnunet.org/bot/log/Guix/2015-02-10][discussion archive]] - 
   - it should be shared -  is /gnu/var
 
 This recipe has me 
@@ -311,20 +538,20 @@ NIX_STATE_DIR=/gnu/var
 
 > Alternately, you can also do:
 >
->   guix build guix --with-source=/path/to/guix
+>   Guix build Guix --with-source=/path/to/Guix
 
 > One can run:
 >
->   GUIX_PROFILE=$HOME/.guix-profile . ~/.guix-profile/etc/profile
+>   GUIX_PROFILE=$HOME/.Guix-profile . ~/.Guix-profile/etc/profile
 
-TODO: there is also a `guix pull` command - what is that about
+TODO: there is also a `Guix pull` command - what is that about
 
 ** Configuration of quix
 
-Difference from http://www.gnu.org/software/guix/manual/guix.html :
+Difference from http://www.gnu.org/software/Guix/manual/Guix.html :
  - /gnu/store is nfs mounted read/write everywhere
- - /gnu is owned by new user, guix (instead of root)
- - guix-daemon runs as guix (not root)
+ - /gnu is owned by new user, Guix (instead of root)
+ - Guix-daemon runs as Guix (not root)
 
 GUIX_DAEMON_SOCKET: "Actually, clients honor the (undocumented) ‘GUIX_DAEMON_SOCKET’
 environment variables, so that’s one thing you could use."
@@ -337,27 +564,27 @@ make check TESTS=tests/syscalls.scm
 
 #+CAPTION: Make the "builder users" and their group... 
 #+BEGIN_SRC sh
-sudo groupadd guix-builder # already exists
+sudo groupadd Guix-builder # already exists
 
 for i in `seq 1 10`; do
-    sudo useradd -g guix-builder  -G guix-builder           \
+    sudo useradd -g Guix-builder  -G Guix-builder           \
                  -d /var/empty -s `which nologin`          \
                  -c "Guix build user $i" \
-                 guix-builder$i;
+                 Guix-builder$i;
   done
 
 ## NOT: in the above --system          \
 
 # Make the /gnu/store directory, where packages are kept/built
-#sudo -u guix mkdir -p /gnu/store
+#sudo -u Guix mkdir -p /gnu/store
 
-sudo -u guix chgrp -R guix-builder /gnu/store
-sudo -u guix chmod -R 1775 /gnu/store
+sudo -u Guix chgrp -R Guix-builder /gnu/store
+sudo -u Guix chmod -R 1775 /gnu/store
 
 ## TODO: do we really want/need to permissions to be 3775 - u=rwx,g=rwx,a=rx sticky and set gid
-## chgrp -R guix-builder 
+## chgrp -R Guix-builder 
 
-ls guix/tests/*.log | xargs -i echo "{}\n" && cat {} >> guix/test.logs
+ls Guix/tests/*.log | xargs -i echo "{}\n" && cat {} >> Guix/test.logs
 
 #+END_SRC
 Notes:
@@ -366,19 +593,19 @@ Notes:
 
 #+CAPTION: produce confirmatory report on the "builder user"
 #+BEGIN_SRC sh
-getent passwd guix
-getent group guix-builder
-getent passwd guix-builder1
+getent passwd Guix
+getent group Guix-builder
+getent passwd Guix-builder1
 #+END_SRC
 
 #+RESULTS:
-: guix:$1$E5Ru3NpE$wZZY.cM8TwbRMHBI1UP110:3036:20302:Guix build user:/var/empty:/bin/bash
-: guix-builder:!:20302:guix-builder1,guix-builder2,guix-builder3,guix-builder4,guix-builder5,guix-builder6,guix-builder7,guix-builder8,guix-builder9,guix-builder10
-: guix-builder1:!!:3048:20302:Guix build user 1:/var/empty:/sbin/nologin
+: Guix:$1$E5Ru3NpE$wZZY.cM8TwbRMHBI1UP110:3036:20302:Guix build user:/var/empty:/bin/bash
+: Guix-builder:!:20302:Guix-builder1,Guix-builder2,Guix-builder3,Guix-builder4,Guix-builder5,Guix-builder6,Guix-builder7,Guix-builder8,Guix-builder9,Guix-builder10
+: Guix-builder1:!!:3048:20302:Guix build user 1:/var/empty:/sbin/nologin
 
 #+CAPTION: Create startup script to deploy within /etc/profile.d
 #+BEGIN_SRC sh
-sudo cat <<EOF > sce_guix.sh
+sudo cat <<EOF > sce_Guix.sh
 ???
 EOF
 #+END_SRC
@@ -389,22 +616,22 @@ While still 'experimenting', you might not yet want to take this next
 
 Declare alternate location for storing (custom) packages: 
 #+BEGIN_SRC sh
-gp=$(readline -m ./guix_package)
+gp=$(readline -m ./Guix_package)
 mkdir gp 
 export GUIX_PACKAGE_PATH=${gp}:${GUIX_PACKAGE_PATH}
 #+END_SRC
-** Advanced guix
+** Advanced Guix
 *** Creating a new recipe for installing a new application
 TBW
-*** Using Emacs interface to guix 
+*** Using Emacs interface to Guix 
 
-install guix.el following https://github.com/alezost/guix.el
+install Guix.el following https://github.com/alezost/Guix.el
 
 ** Alternate installation notes 
 *** bootstrapping
-If guix is already installed, you could
+If Guix is already installed, you could
 #+BEGIN_SRC sh
-guix package --install autoconf automake bzip2 gcc-toolchain gettext \
+Guix package --install autoconf automake bzip2 gcc-toolchain gettext \
                              guile libgcrypt pkg-config sqlite
 
 #+END_SRC
@@ -412,33 +639,33 @@ guix package --install autoconf automake bzip2 gcc-toolchain gettext \
 #+BEGIN_SRC lisp
 (package-install 'geiser)
 (require 'geiser)
-(setq-default geiser-guile-load-path '("~/src/guix"))
+(setq-default geiser-guile-load-path '("~/src/Guix"))
 #+END_SRC
 *** Publishing a list of installed packages to our confluence based software catalog
 PLAN:
 #+BEGIN_QUOTE
-How to coordinate guix/plack content with wiki user content:
+How to coordinate Guix/plack content with wiki user content:
 
 Have one wiki/confluence page for each scientific applications,
 systematiclly named after the app, created according to a template.
 
-Have special section of the page reserved for being written to by guix
+Have special section of the page reserved for being written to by Guix
 
-have tool to update/create wiki page for any guix managed app
+have tool to update/create wiki page for any Guix managed app
 
-First time we run it it pre-creates all pages for guix managed apps.
+First time we run it it pre-creates all pages for Guix managed apps.
 #+END_QUOTE
 
 *** Notifying interested parties when packages are updated
 Users 'self-select' by watching associated confluence page
 ** Site configuration
 Everyone needs following additional shell
-* Using guix
+* Using Guix
 
-The section presents how to use guix to learn about available
+The section presents how to use Guix to learn about available
 applications, and to get them loaded into your unix environment.
 
-** Using the `guix package` command
+** Using the `Guix package` command
 
 You will most often use the `quix package` command to 
 
@@ -454,61 +681,13 @@ TBW
 TBW
 *** Learning what applications are available for installation
 TBW
-*** Using guix instead of python's pip
+*** Using Guix instead of python's pip
 TBW
 *** Enabling reproducible research
-
-* Why guix
-TWB
-** guix is better than bio.brew
-SIMR has gone through a variety of approaches to managing deployment
-and documentation of a wide scientific applications over the years.
-Most recently, we are using in-house developed bio-brew.
-
-The following issues with current bio.brew approach should be
-addressed in this effort.
-   + obscure/opaque:
-     + it wraps/hides the actual commands that are used to
-       configure/make/test/install.  It does this in an attempts to be
-       a useful abstraction, but in fact it is not.  The recipes should
-       either be in SHELL such as bash, or well documented interface to
-       unix system.
-     + it only exposes selected parameters to install (i.e. can not
-       cause make to run verbosely without changing the wrappers)
-     + it adds one more layer between source code and install with
-       intervening *undocumented* variables for communicating state
-       between recipes and the engine.
-   + redundant
-     + recipes must explicitly list the files to be installed:
-       /n/local/bin/bio.brew/recipes/blast+ which requires recipes to
-       be re-written when upstream application changes to change
-       binaries.  Most install mantras have their own list.  It should
-       be sufficient to simply provide a PREFIX.
-   + INCOMPLETE: does not
-     + run tests
-     + detect collisions (due to either multiple versions of a package,
-       or multiple packages with identically named files)
-     + install manpages, libraries, (anything other than binaries)
-       without special code.
-     + provide for environment configuration with shells other than
-       bash (i.e. csh is bash only (i.e. for_env assumes bash)
-     + allow swapping between alternate builds (i.e. deactivate not supported) 
-     + does not handle versioned man pages - or manpages at all for that
-       matter
-     + environment variables are NOT version specific - not possible to
-       have different environments for each versioned install of an app.
-     + allow end-user control of apps in end-user environment - it is an all or none affair.
-   + ISSUES:
-     + advises to 'bb remove full.pkg.name'
-     + the 'logs' directory contains non-logs
-     + logs are not version specific - installing/building a new version
-       overwrites the log of any previous install
-     + uses wierd terminology - 'install' does not install typically it
-       only builds.
-     + installs things using symlinks.  This is unexpected by some apps,
-       esp naively coded ones, such as university coded ones like rsem, 
-       and leads to long testing/debugging session.
-   + TODO: contribute patch of  rsem-calculate-expression to use FindBin::RealBin
+* Q/A
++ How is package recipe used for alternate versions of the package???
++ How does this approach track with changes in the recipe??
++ How are build options handled (i.e. `make --with-gtk `)???
 * GUIX deployment STATUS / notes to self
 - install from source or from 0.8.3 tarball
 - how to bootstrap network ready install?
@@ -518,8 +697,8 @@ or
 	./configure --localstatedir=/gnu/var --exec-prefix=/gnu  
 - init.d system.d 
 - still needed?
- 	mkdir /gnu/var/guix/profiles/per-user ## the doc says this should happen by the daemon but not!  FIXME! BUG?
- 	chmod a+rwx /gnu/var/guix/profiles/per-user
+ 	mkdir /gnu/var/Guix/profiles/per-user ## the doc says this should happen by the daemon but not!  FIXME! BUG?
+ 	chmod a+rwx /gnu/var/Guix/profiles/per-user
 - TBW: transition plan?
 http://debbugs.gnu.org/cgi/bugreport.cgi?bug=20381
 - "Interacting with a remote daemon" - socat test and report "If you
@@ -527,45 +706,40 @@ http://debbugs.gnu.org/cgi/bugreport.cgi?bug=20381
   discussed there, that would be great (please email
   20381@debbugs.gnu.org.)"
 
-We use 'guix' package manager to manage our CentOS-based
+We use 'Guix' package manager to manage our CentOS-based
 bioinformatics and other scientific computing applications.  This
 document describes how to this is done.  The section "Everybody's
-guix" shows you the basic package management method you need to see
+Guix" shows you the basic package management method you need to see
 what applications are installed and how to choose between them.
-"Installing, Configuring, and Deploying guix" details the specifics of
+"Installing, Configuring, and Deploying Guix" details the specifics of
 our site deployment.  "Q/A" provides answers to questions that were
 not readily apparent from a first read of the documentation.  "TODO:"
 lists local configurations and integrations that, once performed, will
-make guix even more useful to the administrator and
+make Guix even more useful to the administrator and
 end-user. "References & Links" provides pointers found valuable during
-the initial study and deployment of guix.
-* Q/A
-+ How is package recipe used for alternate versions of the package???
-+ How does this approach track with changes in the recipe??
-+ How are build options handled (i.e. `make --with-gtk `)???
-* TODO:
-+ address all TODO/FIXME/TBW items.
-+ provide answers to all the Q/A
-+ enable/use emacs interface to guix package management
-+ socat
-+ reports of locally installed packages are posted on wiki
-+ feed to install activity
-+ method for categorizing packages using tags
-+ Document: "Linux package management with guix"
-  + is available
-    + in github
-    + published to wiki
-  + is used as base material for series of workshops
+the initial study and deployment of Guix.
+** TODO:
+ + address all TODO/FIXME/TBW items.
+ + provide answers to all the Q/A
+ + enable/use emacs interface to Guix package management
+ + socat
+ + reports of locally installed packages are posted on wiki
+ + feed to install activity
+ + method for categorizing packages using tags
+ + Document: "Linux package management with Guix"
+   + is available
+     + in github
+     + published to wiki
+   + is used as base material for series of workshops
 * References & Links
 + [[http://www.gnu.org/software/guix/manual/guix.html][GNU Guix Reference Manual]] ([[https://www.gnu.org/software/guix/manual/guix.pdf][pdf]])
 + [[http://arxiv.org/abs/1506.02822][Reproducible and User-Controlled Software Environments in HPC with Guix]]
 + [[http://savannah.gnu.org/git/?group=guix][GNU Guix - Git Repositories on Savannah]]
-+ [[https://www.gnu.org/software/guix/package-list.html][GNU Guix Package List]] - lists packages that are part of base guix
++ [[https://www.gnu.org/software/guix/][GNU's advanced distro and transactional package manager — GuixSD]] - a
+  GNU linux distro which uses Guix as its package manager.
++ [[https://www.gnu.org/software/guix/package-list.html][GNU Guix Package List]] - lists packages that are part of base Guix
   (you get 'out of the box') - includes a few bioinfo packages -
   samtools, bwa, etc
-+ [[https://www.gnu.org/software/guix/][GNU's advanced distro and transactional package manager — GuixSD]] - a
-  GNU linux distro which uses guix as its package manager.
-
 + [[http://guix.mdc-berlin.de][A searchable package list]] - 'You can search for “bioinfo” and all
   packages in the bioinformatics module should be displayed.  There
   are also some machine learning packages and statistics packages that
@@ -574,73 +748,95 @@ the initial study and deployment of guix.
   packages.  Creating a Guix package expression from a CRAN package
   (e.g. DBI) now takes little more than this:
 
-    guix import cran DBI
+    Guix import cran DBI
 
   The output is an expression that takes very little editing can be
   bound to a variable in statistics.scm.  To add the package to Guix
   upstream then only requires submitting a simple patch to
-  guix-devel@gnu.org.
+  Guix-devel@gnu.org.
 + [[http://hackersome.com/p/alezost/guix.el][Emacs interface for Guix package manager]] - out of date - screen shots 
 + [[http://elephly.net/posts/2015-04-17-gnu-guix.html][rekado - GNU Guix in an HPC environment]] -  blog post -
-  + refers to set of recipes [[http://git.savannah.gnu.org/cgit/guix.git/tree/gnu/packages/bioinformatics.scm][guix.git - guix bioinformatics source
+  + refers to set of recipes [[http://git.savannah.gnu.org/cgit/guix.git/tree/gnu/packages/bioinformatics.scm][Guix.git - Guix bioinformatics source
     archive]]
-  + [[https://github.com/BIMSBbioinfo/guix-nonfree/blob/master/bimsb/packages/bioinformatics-nonfree.scm][guix-nonfree/bioinformatics-nonfree.scm]] - Ricardo Wurmus' repos
+  + [[https://github.com/BIMSBbioinfo/guix-nonfree/blob/master/bimsb/packages/bioinformatics-nonfree.scm][Guix-nonfree/bioinformatics-nonfree.scm]] - Ricardo Wurmus' repos
     of 'non-free' bioinfo apps including: DiNup, macs-1, tophat(!), viennarna
-+ [[https://gnunet.org/gnu-guix-initd-script][GNU Guix initd scriptPrimary]] - HowTo: start guix daemon on system startup
-+ [[http://dustycloud.org/blog/guix-package-manager-without-make-install/][Guix package manager without "make install"]] - HowTo: run guix out of
++ [[https://gnunet.org/gnu-guix-initd-script][GNU Guix initd scriptPrimary]] - HowTo: start Guix daemon on system startup
++ [[http://dustycloud.org/blog/guix-package-manager-without-make-install/][Guix package manager without "make install"]] - HowTo: run Guix out of
   the src tree without installing it
 + [[http://dthompson.us/reproducible-development-environments-with-gnu-guix.html][Reproducible Development Environments with GNU Guix]] - blog post -
-  + considers new(ish) `guix environment` command as replacement for
+  + considers new(ish) `Guix environment` command as replacement for
     Python's pip/virtualenv, PHP's composer, node.js' npm
   + demos a package which does not have any source code of its own -
     it only has run-time preconditions of other packages which must be
     "on path". (this is what spack called a "meta-package")
   + demos usage of `--pure` option 
-+ https://github.com/pjotrp/guix-notes includes sections on:
++ https://github.com/pjotrp/Guix-notes includes sections on:
   + on installation 
   + [[https://github.com/pjotrp/guix-notes][Hacking Guix]]:
   + current notes / bioinformatics / hacking tips /
   + lots on ruby gems
-+ [[https://github.com/BIMSBbioinfo/guix/blob/master/gnu/packages/bioinformatics.scm][(define-module (gnu packages bioinformatics)]  - bioinfo repos - now taken down - 
++ [[https://github.com/BIMSBbioinfo/Guix/blob/master/gnu/packages/bioinformatics.scm][(define-module (gnu packages bioinformatics)]]  - bioinfo repos - now taken down - 
   including: bedops, bedtools, python2-pybedtools, bowtie,, bwa,
   python2-bx-python, clipper, clustal-omega,
   crossmap,cutadapt,flexbar, hisat, htseq, htsjdk, macs,
   miso,.... samtools, seqan, star, shogun, vcftools,
-
-* Notes/Suggestions/Best Practices:
-
-#+BEGIN_QUOTE
-snippets - things poelple do
-
-./pre-inst-env guix build ipcalc --keep-failed ;;; note: source file 
-
-$ ./configure --with-libgcrypt-prefix=$HOME/.guix-profile/
---localstatedir=/var
-
-
---prefix=/tmp
-
-
-#+END_QUOTE
-
-nderstand: binary deployment (when not altering: –with-store-dir OR –localstatedir)
++ [[https://www.linkedin.com/pulse/gnu-guix-managing-bioinformatics-software-any-other-altuna-akalin][GNU Guix for managing bioinformatics software (or any other software)]]
+* Challenges 
 
 - CURRENTLY: Guix is not designed to be run in a centralised manner. A
   Guix daemon is supposed to run on each system as root and it listens
   to RPCs from local users only. In an environment with multiple
   clusters and multiple workstations this approach requires
-  considerable effort to qmake it work correctly and securely.
+  considerable effort to make it work correctly and securely.
 
-[[http://www.gnu.org/software/guix/manual/guix.html#Invoking-guix-publish][guix publish]]  - consider using
-
-guix export & import - can translate nix pkgs and be used to move
-packages across machines/installations.
-
-#+BEGIN_QUOTE
-#+END_QUOTE
-* 
-
+* packages installed on mango that we would probably want to uninstall
+these packages are on top of the original base install image
 #+BEGIN_SRC sh
+sudo yum install libtk (needed by R library MASS and expected to be found on local host).
+
+yum install freeglut-devel
+
+Installed:
+  freeglut-devel.x86_64 0:2.8.1-3.el7                                           
+
+Dependency Installed:
+  freeglut.x86_64 0:2.8.1-3.el7                                                 
+  gl-manpages.noarch 0:1.1-7.20130122.el7                                       
+  libX11-devel.x86_64 0:1.6.3-2.el7                                             
+  libXau-devel.x86_64 0:1.0.8-2.1.el7                                           
+  libXdamage-devel.x86_64 0:1.1.4-4.1.el7                                       
+  libXext-devel.x86_64 0:1.3.3-3.el7                                            
+  libXfixes-devel.x86_64 0:5.0.1-2.1.el7                                        
+  libXxf86vm-devel.x86_64 0:1.1.3-2.1.el7                                       
+  libdrm-devel.x86_64 0:2.4.60-3.el7                                            
+  libxcb-devel.x86_64 0:1.11-4.el7                                              
+  libxshmfence.x86_64 0:1.2-1.el7                                               
+  libxshmfence-devel.x86_64 0:1.2-1.el7                                         
+  mesa-libGL-devel.x86_64 0:10.6.5-3.20150824.el7                               
+  mesa-libGLU.x86_64 0:9.0.0-4.el7                                              
+  mesa-libGLU-devel.x86_64 0:9.0.0-4.el7                                        
+  xorg-x11-proto-devel.noarch 0:7.7-12.el7                                      
+
+Dependency Updated:
+  libX11.x86_64 0:1.6.3-2.el7                                                   
+  libX11-common.noarch 0:1.6.3-2.el7                                            
+  libXext.x86_64 0:1.3.3-3.el7                                                  
+  libdrm.x86_64 0:2.4.60-3.el7                                                  
+  libxcb.x86_64 0:1.11-4.el7                                                    
+  mesa-libEGL.x86_64 0:10.6.5-3.20150824.el7                                    
+  mesa-libGL.x86_64 0:10.6.5-3.20150824.el7                                     
+  mesa-libgbm.x86_64 0:10.6.5-3.20150824.el7                                    
+  mesa-libglapi.x86_64 0:10.6.5-3.20150824.el7                                  
+
+
+#+END_SRC
+
+* This document
+** GIT management 
+
+ (replace-regexp-in-string "\n\\'" "" nil)
+
+ #+BEGIN_SRC sh
 git config --global user.name "Cook, Malcolm"
 git config --global user.email "MEC@stowers.org"
 
@@ -651,4 +847,4 @@ git add SCE.md # --all
 git commit -m "Initial Commit"
 git remote add origin http://MEC@stash/scm/cbio/sce.git
 git push origin master
-#+END_SRC
+ #+END_SRC
