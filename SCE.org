@@ -836,7 +836,7 @@ Dependency Updated:
 
  (replace-regexp-in-string "\n\\'" "" nil)
 
- #+BEGIN_SRC sh
+#+BEGIN_SRC sh
 git config --global user.name "Cook, Malcolm"
 git config --global user.email "MEC@stowers.org"
 
