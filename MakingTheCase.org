@@ -10,12 +10,9 @@ for selecting GNU Guix are outlined in this section.
 
 ** GNU Guix - in its own words
 
-The [[http://www.gnu.org/software/guix/manual/guix.html#Introduction][introduction to the GNU Guix documentation]] is jam-packed with
-details that present Guix's advantages.  But, it a bit of a hard read
-to the un-initiated; it is both technical and dense.  If reading past
-its first paragraph proves challenging, skip down to read [[GNU Guix
-advantages broken down]] and then return to this excerpt from the intro:
+The [[http://www.gnu.org/software/guix/manual/guix.html#Introduction][introduction to the GNU Guix documentation]] reads:
 
+#+BEGIN_QUOTE
 "GNU Guix is a functional package management tool for the GNU (linux)
 system. Package management consists of all activities that relate to
 building packages from sources, honoring their build-time and run-time
@@ -46,12 +43,12 @@ package; thus, changing an input yields a different directory name.
 This approach is the foundation of Guix’s salient features: support
 for transactional package upgrade and rollback, per-user installation,
 and garbage collection of packages (see Features)."
+#+END_QUOTE
 
 ** GNU Guix advantages broken down
 
-There is much contained in and implied by GNU Guix's introductory
-section, and elsewhere, within its manual.  This section intends to
-clearly list the practical consequences of our adopting Guix.
+This section intends to clearly list the practical consequences of
+adopting Guix.
 
  + Guix package specifications, being "functional", _cannot_ be
    incomplete; for instance, it is _impossible_ for a deployed Guix
@@ -68,10 +65,10 @@ clearly list the practical consequences of our adopting Guix.
    less-than-expert package developers and deployers.
 
  + Guix detects and prohibits program name collisions; loading
-   conflicting packages into a users environment is _impossible_; this
-   prevents the ambiguity and associated error that can arise when,
-   for example, two packages define different programs by the same
-   name and both are placed in the user's execution PATH.
+   conflicting packages into a users environment is _impossible_.  For
+   example, this prevents the ambiguity and associated error that can
+   arise when two packages define different programs by the same name
+   and both are placed in the user's execution PATH.
 
  + Guix packages naturally extend to include all package resources,
    including man pages, libraries, as well as binaries.  This is a
@@ -84,9 +81,15 @@ clearly list the practical consequences of our adopting Guix.
    to the results of the generally longer process of configuration and
    compilation on local servers.
 
- + Guix provides for transactional package upgrades and roll-backs,
-   allowing testing of new package deployments with a guaranteed means
-   of rapid recovery should testing warrant.
+ + Guix provides for transactional package upgrades and roll-backs.
+   Being transactional, these operations either succeed in their
+   entirety or they fail - partial upgrades or partial roll-backs are
+   not possible, even in the face of process interruption or power
+   failure.
+
+ + Guix rollbacks allows easy testing of new package installation with
+   a guaranteed means of rapid recovery should post-installation
+   testing warrant.
 
  + Guix allows for the creation of multiple environment profiles,
    which may be per-user (typically), or per-group (i.e. lab), or per
@@ -102,7 +105,7 @@ clearly list the practical consequences of our adopting Guix.
 
  + Guix allows for unprivileged package management; users do not need
    special elevated privileges (root or sudo) to create custom
-   environment prifiles.  Especially noteworthy is that this allows
+   environment profiles.  Especially noteworthy is that this allows
    for rationally sharing package management as a distributed
    responsibility.  This includes installing new site-available
    applications (for those available in the guix repositories).  Thus,
@@ -110,7 +113,7 @@ clearly list the practical consequences of our adopting Guix.
    application has become available, that user can safely install the
    upgrade centrally and immediately start using it, without effecting
    any other user's environment; without any further coordination,
-   when another user _are_ ready to adopt the upgrade, they will find
+   when another user _is_ ready to adopt the upgrade, they will find
    that installation is unnecessary, as it has already occurred.
 
  + Guix explicitly represents package dependencies, allowing for a
@@ -120,52 +123,56 @@ clearly list the practical consequences of our adopting Guix.
 
  + Guix provides a set of [[https://www.gnu.org/software/guix/manual/guix.html#Build-Systems][build systems]] providing support for language
    specific package management systems, including R, perl, python,
-   ruby, haskell, emacs.  This should allow a single approach for
+   ruby, haskell, and emacs.  This should allow a single approach for
    managing computing environments for each of these languages/tools,
    as opposed to needing to master the ideosyncracies of multiple
    approaches, i.e. perlbrew for perl, pyenv or pythonbrew for python,
    rbenv for ruby, etc.
 
- + Guix provides command to [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Commands][display package information]], allowing to
-   automate the production of catalogs of software package.  Such
-   catalogs may then be shared, printed, emailed, or embedded into
-   community-visible web pages as various means of advertising package
-   availability to the research community.
+ + Guix control of build processes down to level of
+   binary-compatibility, along with the management tools for
+   environment profiles can provide the basis for improvements in
+   reproducible pipelines, such as are begining to appear in
+   computational centers of excellence.
 
- + Guix package specifications, being written in [[https://www.gnu.org/software/guix/manual/guix.html#Defining-Packages][Guile/scheme]], do no depend
-   upon the users SHELL (i.e. guix works equally well with zsh, bash,
-   tcsh, etc) (TODO: check on this)
+ + Guix provides commands to [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Commands][display package information]] which can be
+   used to automate the production and publishing of software package
+   catalogs.  Such catalogs may then be shared, printed, emailed, or
+   embedded into community-visible web pages as various means of
+   advertising package availability to the research community.
+
+ + Guix package specifications, being written in [[https://www.gnu.org/software/guix/manual/guix.html#Defining-Packages][Guile/scheme]], do not
+   depend upon the users SHELL (i.e. guix works equally well with zsh,
+   bash, tcsh, etc) (TODO: confirm).
 
  + Guix [[https://www.gnu.org/software/guix/manual/guix.html#Invoking-guix-package][simplifies package installation]]: viz. `guix package -i abyss`
    serves to download, compile, test, and install the most recent
    version of abyss known to guix repository.
 
- + Guix has a future - it is the package manager for the new GNU
-   backed linux distribution, [[https://www.gnu.org/software/guix/][GuixSD]].
+ + Guix has a future - it is the package manager for the new
+   GNU-backed linux distribution, [[https://www.gnu.org/software/guix/][GuixSD]].
 
- + Guix is [[https://www.gnu.org/software/guix/manual/][well documented]]
+ + Guix is [[https://www.gnu.org/software/guix/manual/][well documented]].
 
  + Guix features are under continued development, including tools for
-
    + [[https://www.gnu.org/software/guix/manual/guix.html#Invoking-guix-graph][production of graphs]] for visualizing dependencies between packages
-
    + [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Completions][shell 'completion']] facilities
-
    + [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Interface][emacs integration]] (optional) as interface for package development
-     and management
+     and management.
 
- + Guix has [[https://www.gnu.org/software/guix/contribute/][rich community support]] - bugs will be fixed - features will be improved.
+ + Guix has [[https://www.gnu.org/software/guix/contribute/][rich community support]]; bugs will be fixed - features will
+   be improved.
 
- + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][many recipes]] -of which
+ + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][many recipes]], of which
    currently [[http://guix.mdc-berlin.de/packages?/?search=bioinfo][54 are bioinformatics]] packages.
 
- + Guix packaging is relatively easy to learn - it is reasonably
-   documented and there are `lint` style tools making checked recipes
-   for being well-structured; they identify common errors in package
+ + Guix packaging is relatively easy to learn. It is reasonably
+   documented and there are `lint` style tools that check recipes for
+   being well-structured; they identify common errors in package
    specification.
 
- + Guix development is open source - it is open to input from all
-   community members
+ + Guix development is open source.  It is open to input from all
+   community members.
 
- + Guix exposes the actual system calls to the package developer
+ + Guix exposes the actual system calls to the package developer.
 
