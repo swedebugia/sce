@@ -56,13 +56,16 @@ adopting Guix.
    (such as a shared library) in which it was built and deployed.
 
  + Guix strictly control the environment in which packages are built:
-   builds always take place in a 'clean' environment using the linux
-   chroot mechanism.  This makes it easy, when re-packaging an
-   application for Guix, to identify and fix incompletely specified
-   packages (i.e. packages having tacit prerequisites).  Doing so as
-   early as possible in a package's adoption will mitigate exposure to
-   downstream errors.  This is of special advantage to novice and/or
-   less-than-expert package developers and deployers.
+   builds always take place in a 'clean' environment (using the linux
+   chroot mechanism, inter alia).  This makes it (near) impossible for
+   any aspect of the package builders environment to inadvertently
+   "leak" into the package binary.  This also makes it necessary, when
+   (re-)packaging an application for Guix, to identify any
+   incompletely specified packages (i.e. packages having tacit
+   prerequisites).  Doing so as early as possible in a package's
+   adoption will mitigate exposure to downstream errors.  This is of
+   special advantage to novice and/or less-than-expert package
+   developers and deployers.
 
  + Guix detects and prohibits program name collisions; loading
    conflicting packages into a users environment is _impossible_.  For
@@ -75,11 +78,19 @@ adopting Guix.
    result of their using the underlying build engine's (i.e. gnu make)
    installation targets.
 
+ + Guix packages, though dependent upon the machine architecture, are
+   independent on the host on which they are built, or its specific
+   GNU/Linux distribution, or its version.  Thus, for example, packages
+   built under CentOS 6.5 on x86_64 will run under operating system on
+   x86_64, for example, CentOS 7.x and or Ubuntu 15.10 or 14.04.
+
  + Guix packages, being independent of host on which they are built,
    can be downloaded already built by upstream servers known as
-   [[https://www.gnu.org/software/guix/manual/html_node/Substitutes.html#Substitutes][substitues]], with the assurance of their being bit-level identical
-   to the results of the generally longer process of configuration and
-   compilation on local servers.
+   [[https://www.gnu.org/software/guix/manual/html_node/Substitutes.html#Substitutes][substitutes]], saving on the generally longer process of
+   configuration and compilation on local servers.
+
+ + Guix packages can be developed and deployed locally without
+   necessarily contributing to the upstream repository.
 
  + Guix provides for transactional package upgrades and roll-backs.
    Being transactional, these operations either succeed in their
@@ -97,43 +108,50 @@ adopting Guix.
    the effects of package changes to only those subscribing to the
    profile.
 
- + Guix packages, though dependent upon the machine architecture, are
-   independent on the linux distribution, or its version.  Thus, for
-   example, packages built under CentOS 6.5 on x86_64 will run under
-   operating system on x86_64, for example, CentOS 7.x and or Ubuntu
-   15.10 or 14.04.
-
  + Guix allows for unprivileged package management; users do not need
    special elevated privileges (root or sudo) to create custom
    environment profiles.  Especially noteworthy is that this allows
    for rationally sharing package management as a distributed
    responsibility.  This includes installing new site-available
-   applications (for those available in the guix repositories).  Thus,
-   if one user observes that a new release of a site-installed
-   application has become available, that user can safely install the
-   upgrade centrally and immediately start using it, without effecting
-   any other user's environment; without any further coordination,
-   when another user _is_ ready to adopt the upgrade, they will find
-   that installation is unnecessary, as it has already occurred.
+   applications (for those having available recipes in the Guix
+   repositories).  Thus, if one user observes that a new release of a
+   site-installed application has become available, that user can
+   safely install the upgrade centrally and immediately start using
+   it, without effecting any other user's environment; without any
+   further coordination, when another user _is_ ready to adopt the
+   upgrade, they will find that installation is unnecessary, as it has
+   already occurred.
 
  + Guix explicitly represents package dependencies, allowing for a
    [[https://www.gnu.org/software/guix/manual/html_node/Invoking-guix-gc.html#Invoking-guix-gc][garbage collection]] process to identify and delete packages that are
    installed but no longer required; this allows for reclaiming
    storage, and reducing the size of an installed software catalog.
 
- + Guix provides a set of [[https://www.gnu.org/software/guix/manual/guix.html#Build-Systems][build systems]] providing support for language
-   specific package management systems, including R, perl, python,
-   ruby, haskell, and emacs.  This should allow a single approach for
-   managing computing environments for each of these languages/tools,
-   as opposed to needing to master the ideosyncracies of multiple
-   approaches, i.e. perlbrew for perl, pyenv or pythonbrew for python,
-   rbenv for ruby, etc.
+ + A Guix package, once installed, will not be altered, for example,
+   by having one of the packages upon which it depends upgraded.
+
+ + Guix abstracts the idea of [[https://www.gnu.org/software/guix/manual/guix.html#Build-Systems][build systems]] to not only encompass the
+   standard Gnu recipe "(configure; make; make test; make install)"
+   but to also extend to common language/tool specific
+   package/module/add-on managers, including those for R, perl,
+   python, ruby, haskell, and emacs.  This should allow a single
+   command line protocol for managing the building and deployment of
+   such packages.  Additionally, when deployed using guix, they can
+   also be enabled with guix using the `[[https://www.gnu.org/software/guix/manual/guix.html#Invoking-guix-environment][environment]]` sub-command,
+   providing a unified approach where previously multiple tools might
+   have been employed (perlbrew for perl, pyenv or pythonbrew for
+   python, rbenv for ruby, etc.)
 
  + Guix control of build processes down to level of
    binary-compatibility, along with the management tools for
    environment profiles can provide the basis for improvements in
    reproducible pipelines, such as are begining to appear in
    computational centers of excellence.
+
+ + Guix intends to guarantee the reproducibility of a software
+   environment across HPC systems; a computational pipeline should be
+   portable into another Guix environment with the expectation that it
+   will run identically.
 
  + Guix provides commands to [[https://www.gnu.org/software/guix/manual/guix.html#Emacs-Commands][display package information]] which can be
    used to automate the production and publishing of software package
@@ -149,8 +167,8 @@ adopting Guix.
    serves to download, compile, test, and install the most recent
    version of abyss known to guix repository.
 
- + Guix has a future - it is the package manager for the new
-   GNU-backed linux distribution, [[https://www.gnu.org/software/guix/][GuixSD]].
+ + Guix has a future - it is the package manager for [[https://www.gnu.org/software/guix/][GuixSD]], the new
+   GNU/Linux distribution backed by [[https://www.gnu.org/][the GNU project]].
 
  + Guix is [[https://www.gnu.org/software/guix/manual/][well documented]].
 
@@ -163,8 +181,8 @@ adopting Guix.
  + Guix has [[https://www.gnu.org/software/guix/contribute/][rich community support]]; bugs will be fixed - features will
    be improved.
 
- + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][many recipes]], of which
-   currently [[http://guix.mdc-berlin.de/packages?/?search=bioinfo][54 are bioinformatics]] packages.
+ + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][over 3,000 recipes]], of which
+   currently [[http://guix.mdc-berlin.de/packages?/?search=bioinfo][114 are bioinformatics]] packages.
 
  + Guix packaging is relatively easy to learn. It is reasonably
    documented and there are `lint` style tools that check recipes for
@@ -172,7 +190,6 @@ adopting Guix.
    specification.
 
  + Guix development is open source.  It is open to input from all
-   community members.
+   community members.  It is free software!
 
- + Guix exposes the actual system calls to the package developer.
 

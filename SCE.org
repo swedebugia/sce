@@ -640,10 +640,34 @@ Ludo, did I tell you, as you asked, I did build guix from master also without an
   clusters and multiple workstations this approach requires
   considerable effort to make it work correctly and securely.
 
+
 * packages installed on mango that we would probably want to uninstall
-these packages are on top of the original base install image
+
 #+BEGIN_SRC sh
+ssh mec@mango
+find -L /n/local/bin -maxdepth 2 -type f -executable -exec bash -c 'ldd {} | grep \"not found'" > /dev/null' \; -print
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC sh :results output :session *shell*
+ssh mango
+find -L /n/local/bin -maxdepth 2 -type f -executable -exec bash -c 'ldd {} | grep "not found" ' -print \; | tee | grep -v 'not found' | sort | uniq -c
+#+END_SRC
+
+#+RESULTS:
+: find: File system loop detected; ‘/n/local/bin/mpich2/bin’ is part of the same file system loop as ‘/n/local/bin/mpich2’.
+
+these packages are on top of the original base install image
+
+#+RESULTS:
+
+#+BEGIN_SRC sh
+sudo yum install  gmp gmp-devel # needed by pandoc
+
 sudo yum install libtk (needed by R library MASS and expected to be found on local host).
+
 
 yum install freeglut-devel
 
