@@ -1,51 +1,22 @@
-# #+SETUPFILE: ~/.emacs.d/SETUPFILE.org
-# #+TITLE: Making the case for adopting GNU Guix for Linux package management 
-# #+AUTHOR: Malcolm Cook
-# #+EMAIL: malcolm.cook@gmail.com
+* The value of adopting GNU Guix for Linux package management 
 
-* Making the case for adopting GNU Guix for Linux package management 
+There are many approaches to software package management.  GNU Guix
+affords many advantages which can be understood by various reading,
+especially including:
 
-There are many approaches to software package management.  The reasons
-for selecting GNU Guix are outlined in this section.
+ + [[Http://www.gnu.org/software/guix/manual/guix.html#Introduction][Introduction to the GNU Guix documentation]] (manual)
+ + [[http://arxiv.org/abs/1506.02822][Reproducible and User-Controlled Software Environments in HPC with Guix]] (white paper)
+ + [[http://elephly.net/posts/2015-04-17-gnu-guix.html][GNU Guix in an HPC environment]] (a blog post)
+ + [[https://github.com/pjotrp/Guix-notes][pjotrp/guix-notes]] (developer notes and scripts)
 
-** GNU Guix - in its own words
+The points below were learned from reading the Guix materials listed
+above, and from working and experimenting with deployments of
+contending approaches.  They outline the value of adopting GNU Guix in
+a scientific computing environment by describing advantages which
+should accrue to system administrators, software packagers,
+application end-users alike.
 
-The [[http://www.gnu.org/software/guix/manual/guix.html#Introduction][introduction to the GNU Guix documentation]] reads:
-
-#+BEGIN_QUOTE
-"GNU Guix is a functional package management tool for the GNU (linux)
-system. Package management consists of all activities that relate to
-building packages from sources, honoring their build-time and run-time
-dependencies, installing packages in user environments, upgrading
-installed packages to new versions or rolling back to a previous set,
-removing unused software packages, etc.
-
-The term functional refers to a specific package management discipline
-pioneered by Nix (see Acknowledgments). In Guix, the package build and
-installation process is seen as a function, in the mathematical
-sense. That function takes inputs, such as build scripts, a compiler,
-and libraries, and returns an installed package. As a pure function,
-its result depends solely on its inputs—for instance, it cannot refer
-to software or scripts that were not explicitly passed as inputs. A
-build function always produces the same result when passed a given set
-of inputs. It cannot alter the system’s environment in any way; for
-instance, it cannot create, modify, or delete files outside of its
-build and installation directories. This is achieved by running build
-processes in isolated environments (or containers), where only their
-explicit inputs are visible.
-
-The result of package build functions is cached in the file system, in
-a special directory called the store. Each package is installed in a
-directory of its own, in the store—by default under /gnu/store. The
-directory name contains a hash of all the inputs used to build that
-package; thus, changing an input yields a different directory name.
-
-This approach is the foundation of Guix’s salient features: support
-for transactional package upgrade and rollback, per-user installation,
-and garbage collection of packages (see Features)."
-#+END_QUOTE
-
-** GNU Guix advantages broken down
+** GNU Guix advantages
 
  + Guix package specifications, being "functional", _cannot_ be
    incomplete; for instance, it is _impossible_ for a deployed Guix
