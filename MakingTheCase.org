@@ -151,8 +151,8 @@ application end-users alike.
  + Guix has [[https://www.gnu.org/software/guix/contribute/][rich community support]]; bugs will be fixed - features will
    be improved.
 
- + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][over 3,000 recipes]], of which
-   currently [[http://guix.mdc-berlin.de/packages?/?search=bioinfo][114 are bioinformatics]] packages.
+ + Guix community has already prepared [[https://www.gnu.org/software/guix/packages/][over 8,000 recipes]], of which
+   currently [[http://guix.mdc-berlin.de/][335 are bioinformatics]] packages.
 
  + Guix packaging is relatively easy to learn. It is reasonably
    documented and there are `lint` style tools that check recipes for
